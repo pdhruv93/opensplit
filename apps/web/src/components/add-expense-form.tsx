@@ -17,7 +17,6 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import type { Friend, Currency } from "@opensplit/sdk";
-import { Receipt } from "lucide-react";
 
 export function AddExpenseForm({
   friends,
@@ -34,10 +33,7 @@ export function AddExpenseForm({
 
   return (
     <form action={action} className="space-y-4">
-      <div className="flex items-center gap-2 mb-3">
-        <Receipt className="h-4 w-4" />
-        <h3 className="text-sm font-medium">{t("addTitle")}</h3>
-      </div>
+      <h2 className="mb-4 text-xl font-semibold">{t("addTitle")}</h2>
       {state.error && (
         <p className="text-sm text-destructive">{t(state.error)}</p>
       )}

@@ -6,7 +6,13 @@ import { addFriendAction, type FriendState } from "@/lib/actions/friends";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { UserPlus } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/shadcn/tooltip";
+import { Info } from "lucide-react";
 
 export function AddFriendForm() {
   const t = useTranslations("friends");
@@ -18,9 +24,18 @@ export function AddFriendForm() {
 
   return (
     <form action={action} className="space-y-3">
-      <div className="flex items-center gap-2 mb-3">
-        <UserPlus className="h-4 w-4" />
-        <h3 className="text-sm font-medium">{t("addTitle")}</h3>
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="text-xl font-semibold">{t("addTitle")}</h2>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p className="text-xs">{t("addTooltip")}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
       {state.error && (
         <p className="text-sm text-destructive">{t(state.error)}</p>

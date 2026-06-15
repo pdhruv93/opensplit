@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
-import { User, LogOut } from "lucide-react";
+import { User, Users, LogOut } from "lucide-react";
 
 export function UserMenu({
   firstName,
@@ -45,6 +45,10 @@ export function UserMenu({
         <DropdownMenuItem onClick={() => router.push("/profile")}>
           <User className="mr-2 h-4 w-4" />
           {t("profile")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push("/friends")}>
+          <Users className="mr-2 h-4 w-4" />
+          {t("friends")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem

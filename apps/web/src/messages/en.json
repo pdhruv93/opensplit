@@ -38,22 +38,27 @@
   },
   "nav": {
     "profile": "Profile",
+    "friends": "Friends",
     "logout": "Logout"
   },
   "home": {
-    "friendsTitle": "Friends"
+    "balancesTitle": "Balances",
+    "allSettled": "You are all settled up. No balances.",
+    "owesYou": "owes you",
+    "youOwe": "you owe"
   },
   "friends": {
-    "empty": "No friends yet. Add a friend to start splitting expenses.",
-    "settledUp": "settled up",
-    "owesYou": "owes you",
-    "youOwe": "you owe",
+    "title": "Friends",
+    "empty": "No friends yet. Add a friend to get started.",
     "addTitle": "Add Friend",
+    "addTooltip": "If the email is already registered, they'll be added directly. Otherwise, a placeholder account is created with the name you provide — they can register later with the same email.",
     "addSubmit": "Add Friend",
     "addSubmitting": "Adding...",
     "addSuccess": "Friend added!",
     "errorEmail": "Email is required.",
-    "errorFailed": "Failed to add friend."
+    "errorFailed": "Failed to add friend.",
+    "loadingExpenses": "Loading expenses...",
+    "noExpenses": "No expenses with this friend."
   },
   "expenses": {
     "addTitle": "Add Expense",

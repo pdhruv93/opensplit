@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { Expense } from "@opensplit/sdk";
 import { getClient } from "../api";
 
 export type ExpenseState = {
@@ -44,4 +45,11 @@ export async function createExpenseAction(
   } catch {
     return { error: "errorFailed" };
   }
+}
+
+export async function getFriendExpensesAction(
+  friendId: string
+): Promise<Expense[]> {
+  const client = await getClient();
+  return client.expenses.list({ friend_id: friendId });
 }

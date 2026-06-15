@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
-import { FriendsList } from "@/components/friends-list";
-import { FriendsListSkeleton } from "@/components/friends-list-skeleton";
+import { BalancesList } from "@/components/balances-list";
+import { BalancesListSkeleton } from "@/components/balances-list-skeleton";
 import { AddExpenseSection } from "@/components/add-expense-section";
 import { Skeleton } from "@/components/shadcn/skeleton";
 
@@ -11,9 +11,9 @@ export default async function HomePage() {
   return (
     <div className="flex gap-8">
       <div className="flex-1">
-        <h2 className="mb-4 text-lg font-semibold">{t("friendsTitle")}</h2>
-        <Suspense fallback={<FriendsListSkeleton />}>
-          <FriendsList />
+        <h1 className="mb-6 text-2xl font-semibold">{t("balancesTitle")}</h1>
+        <Suspense fallback={<BalancesListSkeleton />}>
+          <BalancesList />
         </Suspense>
       </div>
       <div className="w-80 shrink-0">
