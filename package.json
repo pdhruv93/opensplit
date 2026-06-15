@@ -1,0 +1,28 @@
+{
+  "name": "opensplit",
+  "private": true,
+  "description": "Open-source expense-splitting platform",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "prisma"
+    ]
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter @opensplit/api dev",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "db:generate": "pnpm --filter @opensplit/api db:generate",
+    "db:migrate": "pnpm --filter @opensplit/api db:migrate",
+    "db:seed": "pnpm --filter @opensplit/api db:seed",
+    "db:studio": "pnpm --filter @opensplit/api db:studio"
+  }
+}

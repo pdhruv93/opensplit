@@ -1,0 +1,15 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+    ports:
+      - "${API_PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: file:/data/opensplit.db
+      API_PORT: "3000"
+    volumes:
+      - opensplit_data:/data
+
+volumes:
+  opensplit_data:

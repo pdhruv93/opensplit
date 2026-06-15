@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum GroupType {
+  HOME
+  TRIP
+  COUPLE
+  OTHER
+}
+
+enum CommentType {
+  SYSTEM
+  USER
+}
+
+enum RepeatInterval {
+  NEVER
+  WEEKLY
+  FORTNIGHTLY
+  MONTHLY
+  YEARLY
+}
+
+enum RegistrationStatus {
+  CONFIRMED
+  INVITED
+  DUMMY
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  email              String             @unique
+  firstName          String             @map("first_name")
+  lastName           String?            @map("last_name")
+  passwordHash       String             @map("password_hash")
+  apiKey             String             @unique @map("api_key")
+  locale             String             @default("en")
+  defaultCurrency    String             @default("USD") @map("default_currency")
+  picture            String?
+  registrationStatus RegistrationStatus @default(CONFIRMED) @map("registration_status")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  deletedAt          DateTime?          @map("deleted_at")
+
+  groupMemberships     GroupMember[]
+  expenseShares        ExpenseShare[]
+  comments             Comment[]
+  notifications        Notification[]
+  friendshipsInitiated Friendship[]   @relation("FriendshipInitiator")
+  friendshipsReceived  Friendship[]   @relation("FriendshipReceiver")
+  expensesCreated      Expense[]      @relation("ExpensesCreated")
+  expensesUpdated      Expense[]      @relation("ExpensesUpdated")
+  expensesDeleted      Expense[]      @relation("ExpensesDeleted")
+  notificationsCreated Notification[] @relation("NotificationCreator")
+
+  @@map("users")
+}
+
+model Group {
+  id                String    @id @default(cuid())
+  name              String
+  groupType         GroupType @default(OTHER) @map("group_type")
+  simplifyByDefault Boolean   @default(false) @map("simplify_by_default")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  members  GroupMember[]
+  expenses Expense[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  userId  String @map("user_id")
+  groupId String @map("group_id")
+  user    User   @relation(fields: [userId], references: [id])
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([userId, groupId])
+  @@map("group_members")
+}
+
+model Friendship {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  friendId  String   @map("friend_id")
+  user      User     @relation("FriendshipInitiator", fields: [userId], references: [id])
+  friend    User     @relation("FriendshipReceiver", fields: [friendId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, friendId])
+  @@map("friendships")
+}
+
+model Expense {
+  id             String         @id @default(cuid())
+  groupId        String?        @map("group_id")
+  description    String
+  details        String?
+  cost           Decimal
+  currencyCode   String         @map("currency_code")
+  categoryId     Int?           @map("category_id")
+  date           DateTime       @default(now())
+  repeatInterval RepeatInterval @default(NEVER) @map("repeat_interval")
+  payment        Boolean        @default(false)
+  createdById    String         @map("created_by_id")
+  updatedById    String?        @map("updated_by_id")
+  deletedById    String?        @map("deleted_by_id")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  deletedAt      DateTime?      @map("deleted_at")
+
+  group     Group?    @relation(fields: [groupId], references: [id])
+  category  Category? @relation(fields: [categoryId], references: [id])
+  createdBy User     @relation("ExpensesCreated", fields: [createdById], references: [id])
+  updatedBy User?    @relation("ExpensesUpdated", fields: [updatedById], references: [id])
+  deletedBy User?    @relation("ExpensesDeleted", fields: [deletedById], references: [id])
+
+  shares   ExpenseShare[]
+  comments Comment[]
+
+  @@map("expenses")
+}
+
+model ExpenseShare {
+  id        String  @id @default(cuid())
+  expenseId String  @map("expense_id")
+  userId    String  @map("user_id")
+  paidShare Decimal @default(0) @map("paid_share")
+  owedShare Decimal @default(0) @map("owed_share")
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([expenseId, userId])
+  @@map("expense_shares")
+}
+
+model Comment {
+  id          String      @id @default(cuid())
+  expenseId   String      @map("expense_id")
+  userId      String      @map("user_id")
+  content     String
+  commentType CommentType @default(USER) @map("comment_type")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  deletedAt   DateTime?   @map("deleted_at")
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@map("comments")
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  type        Int
+  content     String
+  sourceType  String?  @map("source_type")
+  sourceId    String?  @map("source_id")
+  imageUrl    String?  @map("image_url")
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user      User  @relation(fields: [userId], references: [id])
+  createdBy User? @relation("NotificationCreator", fields: [createdById], references: [id])
+
+  @@map("notifications")
+}
+
+model Category {
+  id       Int    @id @default(autoincrement())
+  name     String
+  parentId Int?   @map("parent_id")
+
+  parent        Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  subcategories Category[] @relation("CategoryHierarchy")
+  expenses      Expense[]
+
+  @@map("categories")
+}
+
+model Currency {
+  code String @id
+  unit String
+
+  @@map("currencies")
+}
