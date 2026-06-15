@@ -69,9 +69,12 @@
     "descriptionPlaceholder": "Dinner, groceries, etc.",
     "amount": "Amount",
     "currency": "Currency",
-    "splitWith": "Split with",
     "selectFriend": "Select friend",
+    "category": "Category",
+    "selectCategory": "Select category",
     "date": "Date",
+    "participants": "Participants",
+    "you": "You",
     "errorRequired": "Please fill in all required fields.",
     "errorFailed": "Failed to create expense."
   },

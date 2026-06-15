@@ -1,8 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { unstable_cache } from "next/cache";
 import type { Expense } from "@opensplit/sdk";
 import { getClient } from "../api";
+import { getApiKey } from "../auth";
 
 export type ExpenseState = {
   error?: string;
@@ -16,30 +18,37 @@ export async function createExpenseAction(
   const description = formData.get("description") as string;
   const cost = parseFloat(formData.get("cost") as string);
   const currencyCode = formData.get("currencyCode") as string;
-  const friendId = formData.get("friendId") as string;
-  const splitEqually = formData.get("splitEqually") === "on";
   const date = (formData.get("date") as string) || undefined;
+  const categoryIdRaw = formData.get("categoryId") as string;
+  const categoryId = categoryIdRaw ? parseInt(categoryIdRaw, 10) : undefined;
 
-  if (!description || isNaN(cost) || !currencyCode || !friendId) {
+  const userIds = formData.getAll("shareUserId") as string[];
+
+  if (!description || isNaN(cost) || !currencyCode || userIds.length < 2) {
     return { error: "errorRequired" };
   }
 
+  const owedEach = cost / userIds.length;
+  const shares = userIds.map((userId, i) => ({
+    userId,
+    paidShare: i === 0 ? cost : 0,
+    owedShare: owedEach,
+  }));
+
   try {
     const client = await getClient();
-    const me = await client.users.me();
 
     await client.expenses.create({
       description,
       cost,
       currencyCode,
       date,
-      splitEqually,
-      shares: [
-        { userId: me.id, paidShare: cost, owedShare: cost / 2 },
-        { userId: friendId, paidShare: 0, owedShare: cost / 2 },
-      ],
+      categoryId,
+      splitEqually: true,
+      shares,
     });
 
+    revalidateTag("friend-expenses");
     revalidatePath("/");
     return { success: true };
   } catch {
@@ -50,6 +59,18 @@ export async function createExpenseAction(
 export async function getFriendExpensesAction(
   friendId: string
 ): Promise<Expense[]> {
-  const client = await getClient();
-  return client.expenses.list({ friend_id: friendId });
+  const apiKey = (await getApiKey()) ?? "";
+  const baseUrl = process.env.OPENSPLIT_API_URL || "http://localhost:3000";
+
+  const cached = unstable_cache(
+    async (fid: string, key: string, url: string) => {
+      const { OpenSplitClient } = await import("@opensplit/sdk");
+      const client = new OpenSplitClient({ baseUrl: url, apiKey: key });
+      return client.expenses.list({ friend_id: fid });
+    },
+    [`friend-expenses-${apiKey}-${friendId}`],
+    { revalidate: 120, tags: ["friend-expenses"] }
+  );
+
+  return cached(friendId, apiKey, baseUrl);
 }
