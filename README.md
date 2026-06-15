@@ -2,12 +2,14 @@
 
 A free, open-source, self-hosted expense-splitting platform. Track shared expenses, split bills, and settle debts with friends and groups.
 
-OpenSplit provides a REST API backend that you host yourself, a TypeScript SDK for building client applications, and an MCP server for AI agent integration.
+OpenSplit provides a REST API backend that you host yourself, a web frontend, a TypeScript SDK for building client applications, and an MCP server for AI agent integration.
 
 ## Architecture
 
 ```
 opensplit/
+├── apps/
+│   └── web/          # Next.js web frontend
 ├── packages/
 │   ├── api/          # NestJS backend (REST API)
 │   ├── sdk/          # TypeScript SDK for consuming the API
@@ -20,6 +22,7 @@ opensplit/
 
 | Package | Description | Stack |
 |---------|-------------|-------|
+| `@opensplit/web` | Web frontend | Next.js 15, shadcn/ui, Tailwind CSS |
 | `@opensplit/api` | Self-hosted REST API server | NestJS, Prisma, SQLite (configurable) |
 | `@opensplit/sdk` | Typed client SDK (zero dependencies) | TypeScript, native `fetch` |
 | `@opensplit/mcp` | MCP server for AI agent integration | MCP SDK, `@opensplit/sdk` |
@@ -119,11 +122,20 @@ pnpm dev
 
 The API starts on `http://localhost:3000`. Swagger docs are at `http://localhost:3000/api`.
 
+### 5. Start the web frontend (optional)
+
+```bash
+cp apps/web/.env.example apps/web/.env
+pnpm --filter @opensplit/web dev
+```
+
+The web app starts on `http://localhost:3100`. Set `OPENSPLIT_API_URL` in `apps/web/.env` if your API runs on a different port.
+
 ## Docker
 
 Run OpenSplit with Docker (SQLite, no database service needed):
 
-1. Set the host ports in `docker-compose.yml` — replace `<host-api-port>` and `<host-mcp-port>` with your desired ports (e.g. `3000` and `3001`)
+1. Set the host ports in `docker-compose.yml` — replace `<host-api-port>`, `<host-web-port>`, and `<host-mcp-port>` with your desired ports (e.g. `3000`, `3100`, and `3001`)
 2. Start the services:
 
 ```bash
@@ -132,7 +144,10 @@ docker compose up
 
 This starts:
 - **OpenSplit API** on your chosen API port — SQLite, migrations and seeding run automatically
+- **Web frontend** on your chosen web port — connects to the API internally
 - **MCP server** on your chosen MCP port — HTTP mode, connects to the API internally
+
+You can customize the brand name via the `BRAND_NAME` env var: `BRAND_NAME=MyApp docker compose up`
 
 To run in the background:
 
@@ -533,6 +548,33 @@ The AI agent:
 2. Calls `list_friends` to find Alex's user ID
 3. Calls `create_expense` with `{ description: "Dinner", cost: 60, currencyCode: "USD", splitEqually: true, shares: [...] }`
 
+## Web Frontend
+
+The web frontend (`apps/web`) is a Next.js 15 app using shadcn/ui components and Tailwind CSS. It communicates with the API exclusively through server-side SDK calls — the API key is stored in an HTTP-only cookie and never exposed to client-side JavaScript.
+
+### Pages
+
+| Path | Description |
+|------|-------------|
+| `/login` | Sign in with email and password |
+| `/register` | Create a new account — displays the API key as a "Secret" to save |
+| `/` | Home — friends list with balances (left), add expense and add friend forms (right) |
+| `/profile` | Update name, rotate API key |
+
+### Key Design Decisions
+
+- **Server components by default** — data fetching happens on the server via the SDK. Client components are used only for forms and interactive elements.
+- **Suspense streaming** — the friends list and expense form load inside `<Suspense>` boundaries with skeleton fallbacks, so the page shell renders instantly.
+- **Auth via HTTP-only cookie** — the API key is set as an HTTP-only cookie after login/register. Middleware redirects unauthenticated users to `/login`. All API calls go through Next.js server actions or server components.
+- **Brand name from env** — set `NEXT_PUBLIC_BRAND_NAME` in `apps/web/.env` to customize the app name shown in the navbar and auth pages.
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `NEXT_PUBLIC_BRAND_NAME` | No | `OpenSplit` | Brand name displayed in the UI |
+| `OPENSPLIT_API_URL` | No | `http://localhost:3000` | URL of the OpenSplit API (server-side only) |
+
 ## Data Model
 
 ```
@@ -576,6 +618,27 @@ pnpm db:studio      # Open Prisma Studio (database GUI)
 ### Project Structure
 
 ```
+apps/web/
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx          # Root layout
+│   │   ├── (auth)/             # Auth pages (no navbar)
+│   │   │   ├── login/page.tsx
+│   │   │   └── register/page.tsx
+│   │   └── (app)/              # Authenticated pages (with navbar)
+│   │       ├── page.tsx        # Home (friends + expenses)
+│   │       └── profile/page.tsx
+│   ├── components/
+│   │   ├── shadcn/             # shadcn/ui components
+│   │   └── *.tsx               # App components (navbar, forms, lists)
+│   ├── lib/
+│   │   ├── api.ts              # SDK client factory
+│   │   ├── auth.ts             # Cookie management
+│   │   └── actions/            # Server actions (auth, expenses, friends, profile)
+│   └── middleware.ts           # Auth redirect middleware
+├── .env.example
+└── components.json             # shadcn config
+
 packages/api/
 ├── prisma/
 │   ├── schema.prisma       # Database schema

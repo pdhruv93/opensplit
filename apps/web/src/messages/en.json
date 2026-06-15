@@ -1,0 +1,92 @@
+{
+  "common": {
+    "email": "Email",
+    "password": "Password",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "cancel": "Cancel",
+    "done": "Done",
+    "optional": "Optional"
+  },
+  "metadata": {
+    "description": "Split expenses with friends"
+  },
+  "login": {
+    "title": "Sign in to your account",
+    "submit": "Sign in",
+    "submitting": "Signing in...",
+    "noAccount": "Don't have an account?",
+    "register": "Register",
+    "errorRequired": "Email and password are required.",
+    "errorFailed": "Login failed. Please try again."
+  },
+  "register": {
+    "title": "Create a new account",
+    "submit": "Create account",
+    "submitting": "Creating account...",
+    "hasAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "passwordHint": "Minimum 8 characters",
+    "errorRequired": "Email, password, and first name are required.",
+    "errorPasswordLength": "Password must be at least 8 characters.",
+    "errorFailed": "Registration failed. Please try again.",
+    "successTitle": "Registration Successful",
+    "successDescription": "Save your secret key. You will need it if you ever need to recover your account. It will not be shown again.",
+    "secretKeyLabel": "Your Secret Key",
+    "secretKeySaveHint": "Store this in a safe place. You will need this key if you forget your password.",
+    "secretKeySaved": "I've saved my secret key"
+  },
+  "nav": {
+    "profile": "Profile",
+    "logout": "Logout"
+  },
+  "home": {
+    "friendsTitle": "Friends"
+  },
+  "friends": {
+    "empty": "No friends yet. Add a friend to start splitting expenses.",
+    "settledUp": "settled up",
+    "owesYou": "owes you",
+    "youOwe": "you owe",
+    "addTitle": "Add Friend",
+    "addSubmit": "Add Friend",
+    "addSubmitting": "Adding...",
+    "addSuccess": "Friend added!",
+    "errorEmail": "Email is required.",
+    "errorFailed": "Failed to add friend."
+  },
+  "expenses": {
+    "addTitle": "Add Expense",
+    "addSubmit": "Add Expense",
+    "addSubmitting": "Adding...",
+    "addSuccess": "Expense added!",
+    "description": "Description",
+    "descriptionPlaceholder": "Dinner, groceries, etc.",
+    "amount": "Amount",
+    "currency": "Currency",
+    "splitWith": "Split with",
+    "selectFriend": "Select friend",
+    "date": "Date",
+    "errorRequired": "Please fill in all required fields.",
+    "errorFailed": "Failed to create expense."
+  },
+  "profile": {
+    "title": "Profile",
+    "personalInfo": "Personal Information",
+    "saveChanges": "Save Changes",
+    "saving": "Saving...",
+    "updateSuccess": "Profile updated!",
+    "errorFirstName": "First name is required.",
+    "errorFailed": "Failed to update profile.",
+    "apiKeyTitle": "API Key",
+    "apiKeyDescription": "Your API key is used for authentication. Rotating it will invalidate the current key.",
+    "rotateButton": "Rotate API Key",
+    "rotateConfirmTitle": "Rotate API Key?",
+    "rotateConfirmDescription": "This will invalidate your current API key and generate a new one. Any integrations using the old key will stop working.",
+    "rotating": "Rotating...",
+    "rotateSubmit": "Rotate Key",
+    "newKeyTitle": "New API Key",
+    "newKeyDescription": "Save your new key. It will not be shown again.",
+    "errorRotateFailed": "Failed to rotate API key."
+  }
+}
