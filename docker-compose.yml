@@ -4,12 +4,22 @@ services:
       context: .
       dockerfile: packages/api/Dockerfile
     ports:
-      - "${API_PORT:-3000}:3000"
+      - "<host-api-port>:3000"
     environment:
       DATABASE_URL: file:/data/opensplit.db
-      API_PORT: "3000"
     volumes:
       - opensplit_data:/data
+
+  mcp:
+    build:
+      context: .
+      dockerfile: packages/mcp/Dockerfile
+    ports:
+      - "<host-mcp-port>:3001"
+    environment:
+      OPENSPLIT_BASE_URL: http://api:3000
+    depends_on:
+      - api
 
 volumes:
   opensplit_data:
