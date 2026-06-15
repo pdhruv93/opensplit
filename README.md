@@ -2,7 +2,7 @@
 
 A free, open-source, self-hosted expense-splitting platform. Track shared expenses, split bills, and settle debts with friends and groups.
 
-OpenSplit provides a REST API backend that you host yourself, and a TypeScript SDK for building client applications in React, Next.js, or any JavaScript/TypeScript framework.
+OpenSplit provides a REST API backend that you host yourself, a TypeScript SDK for building client applications, and an MCP server for AI agent integration.
 
 ## Architecture
 
@@ -10,7 +10,8 @@ OpenSplit provides a REST API backend that you host yourself, and a TypeScript S
 opensplit/
 ├── packages/
 │   ├── api/          # NestJS backend (REST API)
-│   └── sdk/          # TypeScript SDK for consuming the API
+│   ├── sdk/          # TypeScript SDK for consuming the API
+│   └── mcp/          # MCP server for AI agent integration
 ├── docker-compose.yml
 └── package.json
 ```
@@ -21,6 +22,7 @@ opensplit/
 |---------|-------------|-------|
 | `@opensplit/api` | Self-hosted REST API server | NestJS, Prisma, SQLite (configurable) |
 | `@opensplit/sdk` | Typed client SDK (zero dependencies) | TypeScript, native `fetch` |
+| `@opensplit/mcp` | MCP server for AI agent integration | MCP SDK, `@opensplit/sdk` |
 
 ## Features
 
@@ -119,13 +121,18 @@ The API starts on `http://localhost:3000`. Swagger docs are at `http://localhost
 
 ## Docker
 
-Run OpenSplit in a single container with SQLite (no database service needed):
+Run OpenSplit with Docker (SQLite, no database service needed):
+
+1. Set the host ports in `docker-compose.yml` — replace `<host-api-port>` and `<host-mcp-port>` with your desired ports (e.g. `3000` and `3001`)
+2. Start the services:
 
 ```bash
 docker compose up
 ```
 
-This starts the **OpenSplit API** on port 3000 with SQLite persisted in a Docker volume. Migrations and seeding run automatically on startup.
+This starts:
+- **OpenSplit API** on your chosen API port — SQLite, migrations and seeding run automatically
+- **MCP server** on your chosen MCP port — HTTP mode, connects to the API internally
 
 To run in the background:
 
@@ -398,6 +405,134 @@ try {
 | `openSplit.currencies` | `list()` |
 | `openSplit.categories` | `list()` |
 
+## MCP Server (AI Agent Integration)
+
+OpenSplit includes an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server that lets AI agents interact with your expenses through natural language. For example:
+
+> "Sam and Charlie paid for a birthday gift. Sam paid 19 euros and Charlie paid 37 euros. Split the expense among them."
+
+The AI agent calls `create_expense` with the right shares — no manual API calls needed.
+
+### Prerequisites
+
+- OpenSplit API running (locally or hosted)
+- An API key (from `POST /auth/register` or `POST /auth/login`)
+
+### Mode 1: Stdio (for Claude Desktop, Claude Code, Cursor)
+
+This mode is for **individual developers** using an MCP-compatible AI client on their machine. The client spawns the MCP server as a child process.
+
+Add this to your MCP client config:
+
+**Claude Desktop** (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "opensplit": {
+      "command": "npx",
+      "args": ["-y", "@opensplit/mcp"],
+      "env": {
+        "OPENSPLIT_API_KEY": "your-api-key",
+        "OPENSPLIT_BASE_URL": "http://localhost:3000"
+      }
+    }
+  }
+}
+```
+
+**Claude Code** (`.claude/settings.json`):
+
+```json
+{
+  "mcpServers": {
+    "opensplit": {
+      "command": "npx",
+      "args": ["-y", "@opensplit/mcp"],
+      "env": {
+        "OPENSPLIT_API_KEY": "your-api-key",
+        "OPENSPLIT_BASE_URL": "http://localhost:3000"
+      }
+    }
+  }
+}
+```
+
+### Mode 2: HTTP (for production / multi-user deployments)
+
+This mode runs the MCP server as a **standalone HTTP service**. Use this when building a product where your AI agent backend connects to the MCP server over HTTP. Each request is authenticated individually — pass the user's API key in the `Authorization` header.
+
+```bash
+OPENSPLIT_BASE_URL=http://localhost:3000 npx @opensplit/mcp --http
+```
+
+The server starts on `http://localhost:3001/mcp`. Your AI agent sends JSON-RPC requests via `POST /mcp` with the user's API key:
+
+```bash
+curl -X POST http://localhost:3001/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -H 'Authorization: Bearer <user-api-key>' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+```
+┌──────────┐     ┌──────────────┐     ┌────────────────┐     ┌──────────────┐
+│  User    │────>│  Your AI     │────>│  OpenSplit MCP  │────>│  OpenSplit   │
+│  Browser │     │  Agent       │     │  :3001/mcp      │     │  API :3000   │
+└──────────┘     └──────────────┘     └────────────────┘     └──────────────┘
+                  (passes user's           (forwards
+                   API key via              API key to
+                   Authorization            OpenSplit API)
+                   header)
+```
+
+When using Docker Compose, the MCP server starts automatically in HTTP mode and connects to the API container internally.
+
+#### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `OPENSPLIT_API_KEY` | Stdio only | — | API key for stdio mode (set in MCP client config) |
+| `OPENSPLIT_BASE_URL` | No | `http://localhost:3000` | URL of the OpenSplit API |
+| `OPENSPLIT_MCP_TRANSPORT` | No | `stdio` | Set to `http` for HTTP mode (alternative to `--http` flag) |
+| `OPENSPLIT_MCP_PORT` | No | `3001` | Port for HTTP mode |
+
+### Available Tools
+
+The MCP server exposes 15 tools that AI agents can call:
+
+| Tool | Description |
+|------|-------------|
+| **Expenses** | |
+| `create_expense` | Create an expense with equal or custom splits |
+| `list_expenses` | List expenses with filters (group, friend, date range) |
+| `get_expense` | Get expense details with shares and comments |
+| `update_expense` | Update an existing expense |
+| `delete_expense` | Soft-delete an expense |
+| **Groups** | |
+| `list_groups` | List your groups |
+| `get_group` | Get group with members and balances |
+| `create_group` | Create a new group |
+| `add_group_member` | Add a user to a group |
+| **Friends** | |
+| `list_friends` | List friends with balances |
+| `get_friend` | Get friend details |
+| `add_friend` | Add a friend by user ID or email |
+| **Reference** | |
+| `list_currencies` | List supported currencies |
+| `list_categories` | List expense categories |
+| `get_current_user` | Get your profile and user ID |
+
+### Example Flow
+
+When a user says: *"I paid $60 for dinner with Alex. Split it equally."*
+
+The AI agent:
+1. Calls `get_current_user` to get your user ID
+2. Calls `list_friends` to find Alex's user ID
+3. Calls `create_expense` with `{ description: "Dinner", cost: 60, currencyCode: "USD", splitEqually: true, shares: [...] }`
+
 ## Data Model
 
 ```
@@ -471,6 +606,18 @@ packages/sdk/
 │   ├── types.ts            # All TypeScript interfaces
 │   └── resources/          # One file per API resource
 └── tsup.config.ts          # Build config (CJS + ESM + types)
+
+packages/mcp/
+├── src/
+│   ├── index.ts            # Entry point (stdio + HTTP transports)
+│   ├── errors.ts           # Error formatting for MCP responses
+│   └── tools/              # Tool definitions by domain
+│       ├── expenses.ts     # Expense tools (create, list, get, update, delete)
+│       ├── groups.ts       # Group tools (list, get, create, add member)
+│       ├── friends.ts      # Friend tools (list, get, add)
+│       └── reference.ts    # Currencies, categories, current user
+├── Dockerfile              # Multi-stage Docker build
+└── tsup.config.ts          # Build config
 ```
 
 ## Contributing
