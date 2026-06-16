@@ -10,7 +10,7 @@ export async function Navbar() {
   return (
     <header className="border-b">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
-        <Link href="/" className="text-lg font-semibold">
+        <Link href="/" className="text-lg font-bold text-teal-500">
           {brandName}
         </Link>
         <UserMenu firstName={user.firstName} lastName={user.lastName} />
