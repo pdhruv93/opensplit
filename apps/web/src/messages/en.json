@@ -58,7 +58,10 @@
     "errorEmail": "Email is required.",
     "errorFailed": "Failed to add friend.",
     "loadingExpenses": "Loading expenses...",
-    "noExpenses": "No expenses with this friend."
+    "noExpenses": "No expenses with this friend.",
+    "total": "Total",
+    "youGet": "you get back",
+    "youPay": "you need to pay"
   },
   "expenses": {
     "addTitle": "Add Expense",
@@ -74,6 +77,7 @@
     "selectCategory": "Select category",
     "date": "Date",
     "participants": "Participants",
+    "add": "Add",
     "you": "You",
     "errorRequired": "Please fill in all required fields.",
     "errorFailed": "Failed to create expense."

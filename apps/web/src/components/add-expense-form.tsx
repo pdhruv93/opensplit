@@ -11,6 +11,11 @@ import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Badge } from "@/components/shadcn/badge";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/shadcn/popover";
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -44,12 +49,10 @@ export function AddExpenseForm({
   const [participants, setParticipants] = useState<Participant[]>([
     { userId: currentUser.id, label: t("you"), isSelf: true },
   ]);
-  const [selectedFriend, setSelectedFriend] = useState("");
-  const [selectKey, setSelectKey] = useState(0);
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
-  const addParticipant = () => {
-    if (!selectedFriend) return;
-    const friend = friends.find((f) => f.id === selectedFriend);
+  const addParticipant = (friendId: string) => {
+    const friend = friends.find((f) => f.id === friendId);
     if (!friend) return;
     setParticipants((prev) => [
       ...prev,
@@ -59,8 +62,7 @@ export function AddExpenseForm({
         isSelf: false,
       },
     ]);
-    setSelectedFriend("");
-    setSelectKey((k) => k + 1);
+    setPopoverOpen(false);
   };
 
   const removeParticipant = (userId: string) => {
@@ -166,7 +168,7 @@ export function AddExpenseForm({
         />
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         <Label>{t("participants")}</Label>
         <div className="flex flex-wrap gap-2">
           {participants.map((p) => (
@@ -183,33 +185,38 @@ export function AddExpenseForm({
               )}
             </Badge>
           ))}
+          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Badge
+                variant="outline"
+                className={
+                  availableFriends.length > 0
+                    ? "cursor-pointer gap-1 hover:bg-accent"
+                    : "gap-1 opacity-50 pointer-events-none"
+                }
+              >
+                <Plus className="h-3 w-3" />
+                {t("add")}
+              </Badge>
+            </PopoverTrigger>
+            {availableFriends.length > 0 && (
+              <PopoverContent className="w-48 p-1" align="start">
+                <div className="max-h-48 overflow-y-auto">
+                  {availableFriends.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      className="w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent"
+                      onClick={() => addParticipant(f.id)}
+                    >
+                      {f.firstName} {f.lastName || ""}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            )}
+          </Popover>
         </div>
-        {availableFriends.length > 0 && (
-          <div className="flex gap-2">
-            <Select key={selectKey} value={selectedFriend} onValueChange={setSelectedFriend}>
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder={t("selectFriend")} />
-              </SelectTrigger>
-              <SelectContent>
-                {availableFriends.map((f) => (
-                  <SelectItem key={f.id} value={f.id}>
-                    {f.firstName} {f.lastName || ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 shrink-0"
-              onClick={addParticipant}
-              disabled={!selectedFriend}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
       </div>
 
       <Button type="submit" className="w-full" disabled={pending}>

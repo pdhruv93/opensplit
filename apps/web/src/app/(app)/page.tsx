@@ -9,7 +9,7 @@ export default async function HomePage() {
   const t = await getTranslations("home");
 
   return (
-    <div className="flex gap-8">
+    <div className="flex gap-16">
       <div className="flex-1">
         <h1 className="mb-6 text-2xl font-semibold">{t("balancesTitle")}</h1>
         <Suspense fallback={<BalancesListSkeleton />}>

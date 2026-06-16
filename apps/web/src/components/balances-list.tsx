@@ -13,10 +13,7 @@ export async function BalancesList() {
     youOwe: t("youOwe"),
   };
 
-  const withBalance = friends.filter((f) => {
-    const net = f.balance.reduce((acc, b) => acc + parseFloat(b.amount), 0);
-    return net !== 0;
-  });
+  const withBalance = friends.filter((f) => f.balance.length > 0);
 
   if (withBalance.length === 0) {
     return (

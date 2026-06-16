@@ -36,7 +36,7 @@ opensplit/
 - **Comments** — comment on any expense
 - **Notifications** — activity feed for expense/group changes
 - **Categories** — pre-seeded category hierarchy (Food, Transportation, Utilities, etc.)
-- **Multi-currency** — 37 pre-seeded currencies with full multi-currency balance tracking
+- **Multi-currency** — 37 pre-seeded currencies with per-currency balance tracking (each currency shows its own "owes you" / "you owe" direction independently)
 - **Soft-delete** — expenses and groups are soft-deleted and can be restored
 - **Rate limiting** — per-IP throttling (5 req/min on auth, 100 req/min globally)
 - **Swagger** — auto-generated API documentation at `/api`
@@ -558,7 +558,8 @@ The web frontend (`apps/web`) is a Next.js 15 app using shadcn/ui components and
 |------|-------------|
 | `/login` | Sign in with email and password |
 | `/register` | Create a new account — displays the API key as a "Secret" to save |
-| `/` | Home — friends list with balances (left), add expense and add friend forms (right) |
+| `/` | Home — per-currency balance summary for each friend (left), add expense form (right) |
+| `/friends` | Friends list — accordion with per-currency balances on each header, expandable to see individual expenses |
 | `/profile` | Update name, rotate API key |
 
 ### Key Design Decisions
@@ -566,6 +567,8 @@ The web frontend (`apps/web`) is a Next.js 15 app using shadcn/ui components and
 - **Server components by default** — data fetching happens on the server via the SDK. Client components are used only for forms and interactive elements.
 - **Suspense streaming** — the friends list and expense form load inside `<Suspense>` boundaries with skeleton fallbacks, so the page shell renders instantly.
 - **Auth via HTTP-only cookie** — the API key is set as an HTTP-only cookie after login/register. Middleware redirects unauthenticated users to `/login`. All API calls go through Next.js server actions or server components.
+- **i18n ready** — all UI strings are externalized via [next-intl](https://next-intl.dev/), with English as the default locale. Add new locales by creating translation files in `apps/web/src/messages/`.
+- **Invited users** — when you add a friend by email who hasn't registered yet, a placeholder account is created with `INVITED` status. They can register later with the same email to claim their account and see all shared expenses.
 - **Brand name from env** — set `NEXT_PUBLIC_BRAND_NAME` in `apps/web/.env` to customize the app name shown in the navbar and auth pages.
 
 ### Environment Variables

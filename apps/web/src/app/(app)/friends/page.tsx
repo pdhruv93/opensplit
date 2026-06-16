@@ -9,7 +9,10 @@ import { Users } from "lucide-react";
 async function FriendsContent() {
   const t = await getTranslations("friends");
   const client = await getClient();
-  const friends = await client.friends.list();
+  const [me, friends] = await Promise.all([
+    client.users.me(),
+    client.friends.list(),
+  ]);
 
   if (friends.length === 0) {
     return (
@@ -20,14 +23,14 @@ async function FriendsContent() {
     );
   }
 
-  return <FriendsAccordion friends={friends} />;
+  return <FriendsAccordion friends={friends} currentUserId={me.id} />;
 }
 
 export default async function FriendsPage() {
   const t = await getTranslations("friends");
 
   return (
-    <div className="flex gap-8">
+    <div className="flex gap-16">
       <div className="flex-1">
         <h1 className="mb-6 text-2xl font-semibold">{t("title")}</h1>
         <Suspense fallback={<FriendsListSkeleton />}>
