@@ -80,7 +80,14 @@
     "add": "Add",
     "you": "You",
     "errorRequired": "Please fill in all required fields.",
-    "errorFailed": "Failed to create expense."
+    "errorFailed": "Failed to create expense.",
+    "createWithAI": "Create with AI"
+  },
+  "chat": {
+    "title": "Create with AI",
+    "placeholder": "Describe an expense...",
+    "emptyState": "Describe an expense to create. For example: \"Split dinner $45 with John\"",
+    "thinking": "Thinking..."
   },
   "profile": {
     "title": "Profile",

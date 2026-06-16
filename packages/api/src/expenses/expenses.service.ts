@@ -82,7 +82,7 @@ export class ExpensesService {
     return this.prisma.expense.findMany({
       where,
       include: EXPENSE_INCLUDE,
-      orderBy: { date: 'desc' },
+      orderBy: { createdAt: 'desc' },
       take: limit,
       skip: query.offset || 0,
     });
