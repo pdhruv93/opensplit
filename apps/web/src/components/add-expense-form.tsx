@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import type { Friend, Currency, ParentCategory } from "@opensplit/sdk";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Sparkles } from "lucide-react";
 
 type Participant = {
   userId: string;
@@ -89,7 +89,19 @@ export function AddExpenseForm({
 
   return (
     <form action={action} className="space-y-4">
-      <h2 className="mb-4 text-xl font-semibold">{t("addTitle")}</h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-xl font-semibold">{t("addTitle")}</h2>
+        <button
+          type="button"
+          onClick={() =>
+            window.dispatchEvent(new CustomEvent("opensplit:open-chat"))
+          }
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <Sparkles className="size-3" />
+          {t("createWithAI")}
+        </button>
+      </div>
       {state.error && (
         <p className="text-sm text-destructive">{t(state.error)}</p>
       )}

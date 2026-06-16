@@ -20,9 +20,12 @@ services:
       - "<host-web-port>:3100"
     environment:
       OPENSPLIT_API_URL: http://api:3000
+      OPENSPLIT_MCP_URL: http://mcp:3001
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       NEXT_PUBLIC_BRAND_NAME: ${BRAND_NAME:-OpenSplit}
     depends_on:
       - api
+      - mcp
 
   mcp:
     build:

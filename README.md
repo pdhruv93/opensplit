@@ -2,7 +2,24 @@
 
 A free, open-source, self-hosted expense-splitting platform. Track shared expenses, split bills, and settle debts with friends and groups.
 
-OpenSplit provides a REST API backend that you host yourself, a web frontend, a TypeScript SDK for building client applications, and an MCP server for AI agent integration.
+OpenSplit provides a REST API backend that you host yourself, a web frontend, a TypeScript SDK for building client applications, an MCP server for AI agent integration, and an AI-powered expense creation assistant.
+
+> **Note:** The web UI is not production-ready — it is a quick demo of how to use the backend, MCP server, and AI agent. The primary interface is the REST API and SDK.
+
+## Screenshots
+
+| Home Page | Friends Page |
+|-----------|-------------|
+| ![Home page showing per-currency balances and the add expense form](screenshots/home-page.png) | ![Friends page with expanded accordion showing shared expenses](screenshots/friends-page.png) |
+
+| AI Agent Chat | Swagger API Docs |
+|---------------|-----------------|
+| ![AI chat popover creating an expense from natural language](screenshots/agent-chat.png) | ![Auto-generated Swagger documentation for the REST API](screenshots/swagger-docs.png) |
+
+- **Home Page** — per-currency balance summary for each friend (left) and the add expense form with "Create with AI" button (right)
+- **Friends Page** — accordion list of friends with multi-currency balances on each header, expandable to see individual shared expenses
+- **AI Agent Chat** — floating chat popover that creates expenses from natural language (e.g., "I paid 50 euros and Sam paid 20 euros for a car trip")
+- **Swagger API Docs** — auto-generated interactive API documentation at `/api`
 
 ## Architecture
 
@@ -13,7 +30,8 @@ opensplit/
 ├── packages/
 │   ├── api/          # NestJS backend (REST API)
 │   ├── sdk/          # TypeScript SDK for consuming the API
-│   └── mcp/          # MCP server for AI agent integration
+│   ├── mcp/          # MCP server for AI agent integration
+│   └── ai/           # AI agent for natural language expense creation
 ├── docker-compose.yml
 └── package.json
 ```
@@ -26,6 +44,7 @@ opensplit/
 | `@opensplit/api` | Self-hosted REST API server | NestJS, Prisma, SQLite (configurable) |
 | `@opensplit/sdk` | Typed client SDK (zero dependencies) | TypeScript, native `fetch` |
 | `@opensplit/mcp` | MCP server for AI agent integration | MCP SDK, `@opensplit/sdk` |
+| `@opensplit/ai` | AI agent for natural language expense creation | Vercel AI SDK, OpenAI, `@ai-sdk/mcp` |
 
 ## Features
 
@@ -33,6 +52,7 @@ opensplit/
 - **Groups** — create groups for home, trips, couples, etc.
 - **Friends** — add friends, track balances between any two users
 - **Expenses** — create, split equally or by custom shares, with full validation
+- **AI expense creation** — create expenses from natural language via a chat interface powered by OpenAI
 - **Comments** — comment on any expense
 - **Notifications** — activity feed for expense/group changes
 - **Categories** — pre-seeded category hierarchy (Food, Transportation, Utilities, etc.)
@@ -80,6 +100,7 @@ A [`docker-compose.postgres.yml`](docker-compose.postgres.yml) override is inclu
 
 - [Node.js](https://nodejs.org/) >= 20
 - [pnpm](https://pnpm.io/) >= 9
+- An [OpenAI API key](https://platform.openai.com/api-keys) (only needed for the AI chat feature)
 
 No database installation needed — SQLite is the default and requires no setup.
 
@@ -94,10 +115,41 @@ pnpm install
 ### 2. Configure environment
 
 ```bash
+# API server
 cp packages/api/.env.example packages/api/.env
+
+# MCP server
+cp packages/mcp/.env.example packages/mcp/.env
+
+# Web frontend
+cp apps/web/.env.example apps/web/.env
 ```
 
-The default `.env` uses SQLite (`file:./opensplit.db`) — no changes needed to get started.
+Edit the `.env` files as needed. Here are all the environment variables across packages:
+
+**`packages/api/.env`**
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `DATABASE_URL` | Yes | `file:./opensplit.db` | Database connection string |
+| `API_PORT` | No | `3000` | Port the API server listens on |
+
+**`packages/mcp/.env`**
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `OPENSPLIT_BASE_URL` | No | `http://localhost:3000` | URL of the OpenSplit API |
+| `OPENSPLIT_MCP_PORT` | No | `3001` | Port for the MCP HTTP server |
+| `OPENSPLIT_API_KEY` | Stdio only | — | API key for stdio mode |
+
+**`apps/web/.env`**
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `NEXT_PUBLIC_BRAND_NAME` | No | `OpenSplit` | Brand name displayed in the UI |
+| `OPENSPLIT_API_URL` | No | `http://localhost:3000` | URL of the OpenSplit API |
+| `OPENSPLIT_MCP_URL` | No | `http://localhost:3001` | URL of the MCP server (for AI chat) |
+| `OPENAI_API_KEY` | For AI chat | — | OpenAI API key for the AI expense creation feature |
 
 ### 3. Set up the database
 
@@ -114,37 +166,43 @@ pnpm db:seed
 
 The seed script will print a demo API key — save it for testing.
 
-### 4. Start the server
+### 4. Start the services
+
+You need three processes running:
 
 ```bash
+# Terminal 1: API server
 pnpm dev
-```
 
-The API starts on `http://localhost:3000`. Swagger docs are at `http://localhost:3000/api`.
+# Terminal 2: MCP server (HTTP mode)
+pnpm --filter @opensplit/mcp build
+node packages/mcp/dist/index.js --http
 
-### 5. Start the web frontend (optional)
-
-```bash
-cp apps/web/.env.example apps/web/.env
+# Terminal 3: Web frontend
 pnpm --filter @opensplit/web dev
 ```
 
-The web app starts on `http://localhost:3100`. Set `OPENSPLIT_API_URL` in `apps/web/.env` if your API runs on a different port.
+- **API** starts on `http://localhost:3000` (or your configured `API_PORT`). Swagger docs at `/api`.
+- **MCP server** starts on `http://localhost:3001` (or your configured `OPENSPLIT_MCP_PORT`).
+- **Web app** starts on `http://localhost:3100`.
+
+Make sure the ports in your `.env` files are consistent — `OPENSPLIT_API_URL` and `OPENSPLIT_MCP_URL` in the web app must match the actual API and MCP server ports.
 
 ## Docker
 
 Run OpenSplit with Docker (SQLite, no database service needed):
 
 1. Set the host ports in `docker-compose.yml` — replace `<host-api-port>`, `<host-web-port>`, and `<host-mcp-port>` with your desired ports (e.g. `3000`, `3100`, and `3001`)
-2. Start the services:
+2. Set `OPENAI_API_KEY` for the AI chat feature (optional)
+3. Start the services:
 
 ```bash
-docker compose up
+OPENAI_API_KEY=sk-... docker compose up
 ```
 
 This starts:
 - **OpenSplit API** on your chosen API port — SQLite, migrations and seeding run automatically
-- **Web frontend** on your chosen web port — connects to the API internally
+- **Web frontend** on your chosen web port — connects to the API and MCP server internally
 - **MCP server** on your chosen MCP port — HTTP mode, connects to the API internally
 
 You can customize the brand name via the `BRAND_NAME` env var: `BRAND_NAME=MyApp docker compose up`
@@ -548,9 +606,48 @@ The AI agent:
 2. Calls `list_friends` to find Alex's user ID
 3. Calls `create_expense` with `{ description: "Dinner", cost: 60, currencyCode: "USD", splitEqually: true, shares: [...] }`
 
+## AI Agent (`@opensplit/ai`)
+
+The AI agent package enables natural language expense creation in the web frontend. It connects to the MCP server using [Vercel AI SDK](https://ai-sdk.dev/) and streams responses from OpenAI.
+
+```
+User: "I paid 50 euros and Sam paid 20 euros for a car trip"
+  → Chat UI (useChat) → /api/chat route
+    → @opensplit/ai (streamText + OpenAI)
+      → MCP server (tools: get_current_user, list_friends, create_expense)
+        → OpenSplit API
+```
+
+### How It Works
+
+1. The web app's `/api/chat` route receives the user message
+2. `@opensplit/ai` connects to the MCP server over HTTP using `@ai-sdk/mcp`, authenticated with the logged-in user's API key
+3. OpenAI (via Vercel AI SDK) receives the message + system prompt + available MCP tools
+4. The model calls MCP tools as needed (lookup friends, categories, then create the expense)
+5. Responses stream back to the chat UI in real-time
+
+### System Prompt
+
+The agent is instructed to:
+- Resolve friend names to IDs by calling `list_friends`
+- Pick appropriate expense categories automatically
+- Default to equal splits, today's date, and the user's default currency
+- Confirm with the user before creating any expense
+- Handle custom paid amounts (e.g., "I paid 15, Sam paid 20")
+
+### Key Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| `ai` | Vercel AI SDK core — `streamText`, `convertToModelMessages`, `stepCountIs` |
+| `@ai-sdk/mcp` | MCP client — connects to the OpenSplit MCP server over HTTP |
+| `@ai-sdk/openai` | OpenAI provider for Vercel AI SDK |
+
 ## Web Frontend
 
 The web frontend (`apps/web`) is a Next.js 15 app using shadcn/ui components and Tailwind CSS. It communicates with the API exclusively through server-side SDK calls — the API key is stored in an HTTP-only cookie and never exposed to client-side JavaScript.
+
+> **Note:** The web UI is a demo application to showcase the backend, MCP server, and AI agent capabilities. It is not intended as a production-ready frontend.
 
 ### Pages
 
@@ -568,6 +665,7 @@ The web frontend (`apps/web`) is a Next.js 15 app using shadcn/ui components and
 - **Suspense streaming** — the friends list and expense form load inside `<Suspense>` boundaries with skeleton fallbacks, so the page shell renders instantly.
 - **Auth via HTTP-only cookie** — the API key is set as an HTTP-only cookie after login/register. Middleware redirects unauthenticated users to `/login`. All API calls go through Next.js server actions or server components.
 - **i18n ready** — all UI strings are externalized via [next-intl](https://next-intl.dev/), with English as the default locale. Add new locales by creating translation files in `apps/web/src/messages/`.
+- **AI chat** — a floating chat popover (bottom-right) powered by `@opensplit/ai`. Click the chat bubble or the "Create with AI" button on the expense form to open it.
 - **Invited users** — when you add a friend by email who hasn't registered yet, a placeholder account is created with `INVITED` status. They can register later with the same email to claim their account and see all shared expenses.
 - **Brand name from env** — set `NEXT_PUBLIC_BRAND_NAME` in `apps/web/.env` to customize the app name shown in the navbar and auth pages.
 
@@ -577,6 +675,8 @@ The web frontend (`apps/web`) is a Next.js 15 app using shadcn/ui components and
 |----------|----------|---------|-------------|
 | `NEXT_PUBLIC_BRAND_NAME` | No | `OpenSplit` | Brand name displayed in the UI |
 | `OPENSPLIT_API_URL` | No | `http://localhost:3000` | URL of the OpenSplit API (server-side only) |
+| `OPENSPLIT_MCP_URL` | No | `http://localhost:3001` | URL of the MCP server (for AI chat feature) |
+| `OPENAI_API_KEY` | For AI chat | — | OpenAI API key for the AI expense creation feature |
 
 ## Data Model
 
@@ -628,11 +728,13 @@ apps/web/
 │   │   ├── (auth)/             # Auth pages (no navbar)
 │   │   │   ├── login/page.tsx
 │   │   │   └── register/page.tsx
-│   │   └── (app)/              # Authenticated pages (with navbar)
-│   │       ├── page.tsx        # Home (friends + expenses)
-│   │       └── profile/page.tsx
+│   │   ├── (app)/              # Authenticated pages (with navbar)
+│   │   │   ├── page.tsx        # Home (friends + expenses)
+│   │   │   └── profile/page.tsx
+│   │   └── api/chat/route.ts   # AI chat API endpoint
 │   ├── components/
 │   │   ├── shadcn/             # shadcn/ui components
+│   │   ├── chat-popover.tsx    # AI chat floating panel
 │   │   └── *.tsx               # App components (navbar, forms, lists)
 │   ├── lib/
 │   │   ├── api.ts              # SDK client factory
@@ -682,8 +784,16 @@ packages/mcp/
 │       ├── groups.ts       # Group tools (list, get, create, add member)
 │       ├── friends.ts      # Friend tools (list, get, add)
 │       └── reference.ts    # Currencies, categories, current user
+├── .env.example
 ├── Dockerfile              # Multi-stage Docker build
 └── tsup.config.ts          # Build config
+
+packages/ai/
+├── src/
+│   ├── index.ts            # Public exports
+│   ├── prompt.ts           # System prompt for the AI agent
+│   └── handler.ts          # Chat handler factory (streamText + MCP client)
+└── tsup.config.ts          # Build config (CJS + ESM + types)
 ```
 
 ## Contributing

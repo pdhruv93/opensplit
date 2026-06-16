@@ -1,13 +1,10 @@
 {
-  "name": "@opensplit/mcp",
+  "name": "@opensplit/ai",
   "version": "0.1.0",
-  "description": "MCP server for OpenSplit expense-splitting platform",
+  "description": "AI agent for OpenSplit expense creation via natural language",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
-  "bin": {
-    "opensplit-mcp": "./dist/index.js"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -24,13 +21,12 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "dotenv": "^16.5.0",
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "@opensplit/sdk": "workspace:*",
-    "zod": "^3.25.0"
+    "ai": "^6.0.0",
+    "@ai-sdk/mcp": "^1.0.0",
+    "@ai-sdk/openai": "^3.0.0"
   },
   "devDependencies": {
-    "@types/node": "^22.19.21",
+    "@types/node": "^22.15.0",
     "tsup": "^8.0.0",
     "typescript": "^5.7.0"
   },
