@@ -10,6 +10,20 @@ services:
     volumes:
       - opensplit_data:/data
 
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_BRAND_NAME: ${BRAND_NAME:-OpenSplit}
+    ports:
+      - "<host-web-port>:3100"
+    environment:
+      OPENSPLIT_API_URL: http://api:3000
+      NEXT_PUBLIC_BRAND_NAME: ${BRAND_NAME:-OpenSplit}
+    depends_on:
+      - api
+
   mcp:
     build:
       context: .
